@@ -49,6 +49,18 @@ class TextFile:
             #print(fcopy)
         with open(self.filepath, 'w') as f:
             f.write(fcopy)
+    def remove_line(self,line_n):
+        with open(self.filepath, 'r+') as f:
+            fcopy = f.read()
+            lines = fcopy.split("\n")
+            del lines[line_n]
+            fcopy = ""
+            for line in lines: #put it back together
+                fcopy += line + "\n"
+            fcopy = fcopy[:-1] #get rid of trailing newline
+        with open(self.filepath, 'w') as f:
+            f.write(fcopy)  
+            
     def editor(self):
         startfile(self.filepath)
 
@@ -81,10 +93,10 @@ class Little_Directory(TextFile):
             f.close()
             tf = Notebook(entry['Filepath'], new=True, info = entry)
             print(tf)
-            del tf
             self.tabular_entry(entry_l)
             self.update_info()
             print("File Created Successfully")
+            return tf
         except FileExistsError:
             print("File with given path already exists.")
         
@@ -120,6 +132,7 @@ class Notebook(TextFile):
             self.tabular_entry([ #get the line number
                     "("+str( len( str(self).split("\n") ) - 1 )+")", entry['Title'], entry['Filepath']
                 ])
+            return tf
         except:
             print("File with given path already exists.")
     @property
@@ -128,7 +141,7 @@ class Notebook(TextFile):
             lines = str(self).split("\n")[1:]
         except:
             print("Notebook is empty: info generation failed")
-            return
+            return None
         infot = ["Entry Number","Title","Filepath"]
         return [
             {i:t for i, t in zip(infot, line.split()) }
@@ -155,8 +168,76 @@ class Note(TextFile):
             
         self.editor()
         input("\nSave File and Press Enter to Continue... ")
-        print("File Saved as" + self.filepath)
+        print("File Saved as " + self.filepath)
+
+class UI:
+    d = Little_Directory("little_dir.txt") #directory
+    nb = None #notebook
+    n = None #note
+    s = 11 #state
+    #state numbering system is two digit.
+    #First is Level (directory, nb, n)
+    #second is action (0 setup, 1 options, 2 new, 3 edit)
+    
+    def start(self):
+        print("IDEA ENTRY PROGRAM")
+        print("Welcome")
+        while(True):
+            self.state_machine()
+
+    def state_machine(self):
+        match self.s:
+            case 11: #DIRECTORY STATE
+                print()
+                print("\t\t\t---DIRECTORY---\n")
+                print(self.d)
+                print()
+                self.s = self.display_options(
+                    "---DIRECTORY---",["Exit","Choose Notebook","New Notebook","Delete Notebook"],
+                    [0, 20, 12, 13] )
+            case 12:
+                self.nb = self.d.user_new_notebook()
+                self.s = 21
+                
+            case 13:
+                return
+            case 20:
+                self.nb = self.d.notebook # gets user input to choose notebook
+                self.s = 21
+            case 21:
+                print("\t\t\t---NOTEBOOK---\n")
+                print(self.nb)
+                print()
+                self.s = self.display_options(
+                    "---NOTEBOOK---",["Exit","Choose Note","New Note","Delete Note", "Back to Directory"],
+                    [0, 30, 22, 23, 11] )
+            case 30:
+                if (self.nb.file_info == None):
+                    print("Notebook is empty. Create a note.")
+                    self.s = 21
+                self.n = self.nb.note # gets user input to choose note
+                self.s = 21 
+            case 22:
+                self.n = self.nb.user_new_note()
+                self.s = 21
+            case 23:
+                print("not yet programmed")
+                self.s = 21
+            case 0:
+                exit()
+            case _:
+                print(f"INVALID STATE: {self.s}")
+                self.s = 0
         
+            
+    def display_options(self,message,options_l,states_l):
+        print(message)
+        for i, opt in enumerate(options_l):
+            print(f"\t({i})\t {opt}")
+        return states_l[int(input("Enter Number: "))]
+            
+
+#make a directory if there isn't one...       
 try:
     f = open("little_dir.txt",'x')
     f.close()
@@ -175,8 +256,8 @@ finally:
 
 
 
-d = Little_Directory("little_dir.txt")
-print(d)
-#d.user_new_notebook()
+
+loop = UI()
+loop.start()
 
 
